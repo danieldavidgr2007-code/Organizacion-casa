@@ -1,5 +1,5 @@
 package GUI;
-package prueba_gui;
+package gui;
 
 import javax.swing.*;
 import java.awt.*;

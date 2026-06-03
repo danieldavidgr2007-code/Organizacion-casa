@@ -6,9 +6,10 @@
 // ==============================================================================
 package principal;
 import logica.GestorUsuarios;
+
 import javax.swing.SwingUtilities;
 // IMPORTANTE: Asegúrate de tener el paquete gui del repositorio importado
-// import gui.Ventana;
+import gui.Ventana;
 
 public class Main {
     public static void main(String[] args) {

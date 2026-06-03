@@ -1,4 +1,4 @@
-package prueba_gui;
+package gui;
 
 import java.awt.EventQueue;
 
