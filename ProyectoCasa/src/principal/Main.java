@@ -7,7 +7,7 @@
 package principal;
 import logica.GestorUsuarios;
 
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 // IMPORTANTE: Asegúrate de tener el paquete gui del repositorio importado
 import gui.Ventana;
 
