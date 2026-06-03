@@ -1,4 +1,10 @@
-package GUI;
+// ==============================================================================
+// Universidad Distrital Francisco José de Caldas
+// Autores: Cristian Velosa (20252020066) y Daniel David Granados Rivera (20252020135)
+// Fecha de Creación: 28/05/2026 | Modificación: 03/06/2026
+// Descripción: Interfaz Gráfica Principal para el Controlador de Energía Doméstica.
+//              Implementa principios de psicología del color y diseño por paneles.
+// ==============================================================================
 package gui;
 
 import javax.swing.*;
@@ -13,11 +19,9 @@ import javax.swing.border.LineBorder;
  */
 public class ControladorEnergiaGUI extends JFrame {
 
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	// Definición de la paleta de colores (Psicología del Color)
+    private static final long serialVersionUID = 1L;
+    
+    // Definición de la paleta de colores (Psicología del Color)
     private final Color COLOR_MENU = new Color(30, 58, 138);       // Azul Oscuro: Tecnología y confianza
     private final Color COLOR_FONDO = new Color(243, 244, 246);    // Gris Claro: Claridad y minimalismo
     private final Color COLOR_AHORRO = new Color(16, 185, 129);    // Verde: Ecología y acciones positivas
@@ -65,7 +69,7 @@ public class ControladorEnergiaGUI extends JFrame {
     }
 
     /**
-     * Cree los botones del menú lateral con un estilo unificado.
+     * Crea los botones del menú lateral con un estilo unificado.
      */
     private JButton crearBotonMenu(String texto) {
         JButton boton = new JButton(texto);
@@ -166,7 +170,7 @@ public class ControladorEnergiaGUI extends JFrame {
     }
 
     /**
-     * Método principal para ejecutar el programa (Run del Programa).
+     * Método principal para ejecutar el programa de forma aislada (Opcional).
      */
     public static void main(String[] args) {
         // Asegurar que la interfaz se ejecute en el hilo de eventos de Swing
@@ -178,4 +182,4 @@ public class ControladorEnergiaGUI extends JFrame {
             }
         });
     }
-}
+} // <- AQUÍ ESTÁ EL CORCHETE QUE FALTABA PARA CERRAR LA CLASE COMPLETAMENTE

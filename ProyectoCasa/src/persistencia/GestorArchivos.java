@@ -1,7 +1,7 @@
 // ==============================================================================
 // Universidad Distrital Francisco José de Caldas
 // Autores: Cristian Velosa (20252020066) y Daniel David Granados Rivera (20252020135)
-// Fecha de Creación: 28/05/2026 | Modificación: 02/06/2026
+// Fecha de Creación: 28/05/2026 | Modificación: 03/06/2026
 // Descripción: Kernel de persistencia. Serializa y Deserializa la colección completa.
 // ==============================================================================
 package persistencia;
@@ -10,7 +10,8 @@ import java.io.*;
 import java.util.ArrayList;
 
 public class GestorArchivos {
-    private static final String RUTA = "datos_usuario.dat";
+    // Nombre del archivo actualizado según requerimiento
+    private static final String RUTA = "proyecto_casa_usuarios.dat";
 
     // Guarda el ArrayList completo.
     public static void guardarUsuarios(ArrayList<Usuario> lista) {
