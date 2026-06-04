@@ -1,136 +1,118 @@
 package gui;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
 import logica.GestorUsuarios;
-import logica.AgenteAdmin;
-import logica.Usuario;
-import excepciones.PasswordInvalidaException;
 
 public class UIRegistro extends JFrame {
-    
+
     private static final long serialVersionUID = 1L;
+    private JPanel contentPane;
+    private JTextField txtNuevoUsuario;
+    private JPasswordField txtNuevoPassword;
     private GestorUsuarios gestor;
-    
-    private Color lila = new Color(230, 216, 248);
-    private Color morado = new Color(180, 150, 230);
+    private boolean vieneDeLogin;
 
-    public UIRegistro(GestorUsuarios gestor, boolean esRecuperacion) {
+    // --- PALETA VALORANT ---
+    private final Color FONDO_NEGRO = new Color(18, 18, 18);
+    private final Color COLOR_CLOVE = new Color(254, 150, 180);  // Rosa/Lavanda Clove
+    private final Color COLOR_REYNA = new Color(178, 62, 137);  // Magenta Reyna
+    private final Color TEXTO_BLANCO = Color.WHITE;
+
+    public UIRegistro(GestorUsuarios gestor, boolean vieneDeLogin) {
         this.gestor = gestor;
-        
-        setTitle(esRecuperacion ? "Recuperar Cuenta - Clove" : "Registro de Usuario Maestro - Clove");
-        setSize(450, 600); // Ventana más grande para que quepan todos los campos
-        setLocationRelativeTo(null);
+        this.vieneDeLogin = vieneDeLogin;
+
+        setTitle("SmartHome - Crear Cuenta");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        getContentPane().setBackground(lila);
-        setLayout(null);
+        setBounds(100, 100, 670, 550);
+        setLocationRelativeTo(null);
 
-        JLabel lblTitulo = new JLabel(esRecuperacion ? "RESTABLECER CONTRASEÑA" : "CREAR USUARIO MAESTRO", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        lblTitulo.setBounds(10, 20, 414, 30);
-        add(lblTitulo);
+        contentPane = new JPanel();
+        contentPane.setBackground(FONDO_NEGRO);
+        contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+        setContentPane(contentPane);
+        contentPane.setLayout(null);
 
-        if (!esRecuperacion) {
-            // ==========================================
-            // MODO: CREACIÓN DE USUARIO Y PREGUNTAS
-            // ==========================================
-            JLabel lblU = new JLabel("Nombre de Usuario:");
-            lblU.setBounds(40, 70, 350, 20); add(lblU);
-            JTextField txtUser = new JTextField();
-            txtUser.setBounds(40, 95, 350, 30); add(txtUser);
+        JLabel lblReg = new JLabel(vieneDeLogin ? "REGISTRAR NUEVO AGENTE" : "REGISTRO DE ADMINISTRADOR INICIAL");
+        lblReg.setHorizontalAlignment(SwingConstants.CENTER);
+        lblReg.setForeground(COLOR_CLOVE);
+        lblReg.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblReg.setBounds(0, 40, 656, 40);
+        contentPane.add(lblReg);
 
-            JLabel lblP = new JLabel("Contraseña (Mayús, minús, Núm, Especial):");
-            lblP.setBounds(40, 140, 350, 20); add(lblP);
-            JPasswordField txtPass = new JPasswordField();
-            txtPass.setBounds(40, 165, 350, 30); add(txtPass);
+        JLabel lblUser = new JLabel("Defina su Usuario:");
+        lblUser.setForeground(TEXTO_BLANCO);
+        lblUser.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        lblUser.setBounds(123, 130, 200, 30);
+        contentPane.add(lblUser);
 
-            // AQUÍ ESTÁN LAS PREGUNTAS ANTES DE CREAR EL USUARIO
-            JLabel lblR1 = new JLabel("Seguridad 1: ¿Cuál es tu color favorito?");
-            lblR1.setBounds(40, 210, 350, 20); add(lblR1);
-            JTextField txtR1 = new JTextField();
-            txtR1.setBounds(40, 235, 350, 30); add(txtR1);
+        // CAMPO USUARIO (Borde Clove)
+        txtNuevoUsuario = new JTextField();
+        txtNuevoUsuario.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        txtNuevoUsuario.setBackground(new Color(30, 30, 30));
+        txtNuevoUsuario.setForeground(TEXTO_BLANCO);
+        txtNuevoUsuario.setCaretColor(TEXTO_BLANCO);
+        txtNuevoUsuario.setBorder(BorderFactory.createLineBorder(COLOR_CLOVE, 2));
+        txtNuevoUsuario.setBounds(123, 165, 420, 40);
+        contentPane.add(txtNuevoUsuario);
 
-            JLabel lblR2 = new JLabel("Seguridad 2: ¿Nombre de tu primera mascota?");
-            lblR2.setBounds(40, 280, 350, 20); add(lblR2);
-            JTextField txtR2 = new JTextField();
-            txtR2.setBounds(40, 305, 350, 30); add(txtR2);
+        JLabel lblPass = new JLabel("Defina su Contraseña:");
+        lblPass.setForeground(TEXTO_BLANCO);
+        lblPass.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        lblPass.setBounds(123, 230, 200, 30);
+        contentPane.add(lblPass);
 
-            JButton btnGuardar = new JButton("FINALIZAR Y CREAR ADMIN");
-            btnGuardar.setBackground(morado);
-            btnGuardar.setForeground(Color.WHITE);
-            btnGuardar.setFont(new Font("Segoe UI", Font.BOLD, 16));
-            btnGuardar.setBounds(40, 380, 350, 50);
-            btnGuardar.setFocusPainted(false);
-            add(btnGuardar);
+        // CAMPO CONTRASEÑA (Borde Clove)
+        txtNuevoPassword = new JPasswordField();
+        txtNuevoPassword.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        txtNuevoPassword.setBackground(new Color(30, 30, 30));
+        txtNuevoPassword.setForeground(TEXTO_BLANCO);
+        txtNuevoPassword.setCaretColor(TEXTO_BLANCO);
+        txtNuevoPassword.setBorder(BorderFactory.createLineBorder(COLOR_CLOVE, 2));
+        txtNuevoPassword.setBounds(123, 265, 420, 40);
+        contentPane.add(txtNuevoPassword);
 
-            btnGuardar.addActionListener(e -> {
-                String u = txtUser.getText().trim();
-                String p = new String(txtPass.getPassword());
-                String r1 = txtR1.getText().trim();
-                String r2 = txtR2.getText().trim();
+        // BOTÓN CREAR (Borde Reyna)
+        JButton btnGuardar = new JButton("CREAR E INYECTAR PERFIL");
+        btnGuardar.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btnGuardar.setBackground(FONDO_NEGRO);
+        btnGuardar.setForeground(COLOR_REYNA);
+        btnGuardar.setBorder(BorderFactory.createLineBorder(COLOR_REYNA, 2));
+        btnGuardar.setBounds(123, 370, 420, 45);
+        btnGuardar.setFocusPainted(false);
+        contentPane.add(btnGuardar);
 
-                if (u.isEmpty() || p.isEmpty() || r1.isEmpty() || r2.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "No puedes continuar. Debes llenar el usuario, clave y preguntas de seguridad.", "Campos Vacíos", JOptionPane.WARNING_MESSAGE);
+        btnGuardar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String user = txtNuevoUsuario.getText().trim();
+                String pass = String.valueOf(txtNuevoPassword.getPassword()).trim();
+
+                if (user.isEmpty() || pass.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "No sea flojo, meta datos en los campos.", "Campos Vacíos", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
 
-                try {
-                    Usuario admin = new AgenteAdmin(u, p, r1, r2, "no_definido");
-                    gestor.registrarUsuario(admin);
-                    
-                    JOptionPane.showMessageDialog(this, "¡Usuario Administrador creado exitosamente!");
+                if (gestor.registrarUsuario(user, pass)) {
+                    JOptionPane.showMessageDialog(null, "Usuario creado melamente.");
                     dispose();
                     new UILogin(gestor).setVisible(true);
-                } catch (PasswordInvalidaException ex) {
-                    JOptionPane.showMessageDialog(this, ex.getMessage(), "Error de Seguridad", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(null, "Ese tag ya existe, sea original, mi pez.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
-            });
-
-        } else {
-            // ==========================================
-            // MODO: RECUPERACIÓN DE CONTRASEÑA
-            // ==========================================
-            JLabel lblUserRec = new JLabel("Digita tu Nombre de Usuario:");
-            lblUserRec.setBounds(40, 80, 350, 20); add(lblUserRec);
-            JTextField txtUserRec = new JTextField();
-            txtUserRec.setBounds(40, 105, 350, 30); add(txtUserRec);
-
-            JLabel lblR1 = new JLabel("Validación 1: ¿Color favorito?");
-            lblR1.setBounds(40, 155, 350, 20); add(lblR1);
-            JTextField txtR1 = new JTextField();
-            txtR1.setBounds(40, 180, 350, 30); add(txtR1);
-
-            JLabel lblR2 = new JLabel("Validación 2: ¿Nombre de tu mascota?");
-            lblR2.setBounds(40, 230, 350, 20); add(lblR2);
-            JTextField txtR2 = new JTextField();
-            txtR2.setBounds(40, 255, 350, 30); add(txtR2);
-
-            JButton btnValidar = new JButton("VERIFICAR RESPUESTAS");
-            btnValidar.setBackground(morado);
-            btnValidar.setForeground(Color.WHITE);
-            btnValidar.setFont(new Font("Segoe UI", Font.BOLD, 16));
-            btnValidar.setBounds(40, 330, 350, 50);
-            btnValidar.setFocusPainted(false);
-            add(btnValidar);
-
-            btnValidar.addActionListener(e -> {
-                try {
-                    Usuario buscado = gestor.validarPreguntasSeguridad(txtUserRec.getText().trim(), txtR1.getText().trim(), txtR2.getText().trim(), "no_definido");
-                    if (buscado != null) {
-                        String nuevaClave = JOptionPane.showInputDialog(this, "Respuestas correctas. Ingresa tu nueva contraseña:");
-                        if (nuevaClave != null && !nuevaClave.isEmpty()) {
-                            gestor.actualizarPassword(buscado, nuevaClave);
-                            JOptionPane.showMessageDialog(this, "¡Contraseña actualizada!");
-                            dispose();
-                            new UILogin(gestor).setVisible(true);
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(this, "Las respuestas no coinciden con la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(this, "Usuario no existe.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            });
-        }
+            }
+        });
     }
 }

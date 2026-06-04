@@ -3,339 +3,681 @@
 // Autores: Cristian Velosa (20252020066) y Daniel David Granados Rivera (20252020135)
 // Fecha de Creación: 28/05/2026 | Modificación: 04/06/2026
 // Descripción: Interfaz Gráfica Principal con Separación de Módulos.
-//              Control de adición ubicado exclusivamente en la pestaña Dispositivos.
+//              Estética Oscura Táctica - Inspirada en Agentes de Valorant.
 // ==============================================================================
 package gui;
 
-import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import javax.swing.border.LineBorder;
+import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.List;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import logica.GestorUsuarios;
+import logica.Usuario;
 
-/**
- * Interfaz Gráfica Principal para el Controlador de Energía Doméstica.
- */
 public class ControladorEnergiaGUI extends JFrame {
 
-    private static final long serialVersionUID = 1L;
+    private Usuario usuarioActivo;
+    private GestorUsuarios gestor;
     
-    private JPanel panelContenedor;
-    private CardLayout cardLayout;
-    
-    // Contenedor global de las tarjetas del Dashboard
-    private JPanel panelTarjetas;
-    
-    // Paleta de colores (Psicología del Color)
-    private final Color COLOR_MENU = new Color(30, 58, 138);       // Azul: Tecnología
-    private final Color COLOR_FONDO = new Color(243, 244, 246);    // Gris Claro: Minimalismo
-    private final Color COLOR_AHORRO = new Color(16, 185, 129);    // Verde: Ecología
-    private final Color COLOR_ALERTA = new Color(239, 68, 68);     // Rojo: Alertas/Apagado
-    private final Color COLOR_TEXTO_BLANCO = Color.WHITE;
-    private final Color COLOR_TEXTO_OSCURO = new Color(31, 41, 55);
+    // Paleta de colores Dark Mode - Valorant/Hacker
+    private final Color BG_COLOR = new Color(18, 18, 18);
+    private final Color PANEL_COLOR = new Color(30, 30, 30);
+    private final Color ACCENT_GREEN = new Color(57, 255, 20); 
+    private final Color ACCENT_RED = new Color(255, 69, 0);   
+    private final Color ACCENT_CYAN = new Color(0, 212, 255); 
+    private final Color TEXT_COLOR = Color.WHITE;
 
-    public ControladorEnergiaGUI() {
-        setTitle("Controlador de Energía Doméstica - SmartHome Manager");
-        setSize(1050, 650); 
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null); 
-        getContentPane().setLayout(new BorderLayout());
+    // Tarifa promedio en Colombia
+    private final double TARIFA_KWH = 850.0;
+
+    private CardLayout cardLayout;
+    private JPanel panelContenedor;
+    private JPanel panelDashboardTarjetas; 
+    private JPanel panelResumenTarjetas; 
+    private List<PanelDispositivo> listaPanelesDispositivos;
+    
+    private final float BASE_WIDTH = 1100f;
+    private final float BASE_HEIGHT = 700f;
+
+    public ControladorEnergiaGUI(Usuario usuarioActivo, GestorUsuarios gestor) {
+        this.usuarioActivo = usuarioActivo;
+        this.gestor = gestor;
+        this.listaPanelesDispositivos = new ArrayList<>();
+
+        setTitle("SmartHome Manager - Panel de Control - Agente: " + usuarioActivo.getUsername());
+        setSize((int)BASE_WIDTH, (int)BASE_HEIGHT);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
+        getContentPane().setBackground(BG_COLOR);
 
         cardLayout = new CardLayout();
         panelContenedor = new JPanel(cardLayout);
+        panelContenedor.setBackground(BG_COLOR);
 
-        // Inicializar el contenedor de tarjetas antes de construir las pantallas
-        panelTarjetas = new JPanel(new GridLayout(0, 3, 20, 20));
-        panelTarjetas.setBackground(COLOR_FONDO);
+        panelDashboardTarjetas = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
+        panelDashboardTarjetas.setBackground(BG_COLOR);
+
+        panelResumenTarjetas = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
+        panelResumenTarjetas.setBackground(BG_COLOR);
+
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                float scale = Math.min(getWidth() / BASE_WIDTH, getHeight() / BASE_HEIGHT);
+                aplicarEscaladoFuentes(getContentPane(), scale);
+            }
+        });
+
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                confirmarSalida();
+            }
+        });
 
         inicializarMenuLateral();
         construirVistas();
+        cargarDispositivosGuardados(); 
     }
 
     private void inicializarMenuLateral() {
-        JPanel panelMenu = new JPanel();
-        panelMenu.setBackground(new Color(0, 128, 128));
-        panelMenu.setPreferredSize(new Dimension(240, getHeight()));
-        panelMenu.setLayout(new GridLayout(6, 1, 10, 10));
-        panelMenu.setBorder(BorderFactory.createEmptyBorder(20, 15, 20, 15));
+        JPanel panelMenu = new JPanel(new GridLayout(6, 1, 10, 15));
+        panelMenu.setBackground(new Color(12, 12, 12));
+        panelMenu.setBorder(new EmptyBorder(20, 20, 20, 20));
+        panelMenu.setPreferredSize(new Dimension(250, 0));
 
         JLabel lblTitulo = new JLabel("Smart Home", SwingConstants.CENTER);
-        lblTitulo.setForeground(COLOR_TEXTO_BLANCO);
-        lblTitulo.setFont(new Font("Tahoma", Font.BOLD, 22));
+        lblTitulo.setForeground(new Color(212, 175, 55)); 
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 26));
         panelMenu.add(lblTitulo);
 
-        JButton btnDashboard = crearBotonMenu("Dashboard");
-        JButton btnDispositivos = crearBotonMenu("Dispositivos");
-        JButton btnReglas = crearBotonMenu("Reglas y Horarios");
-        JButton btnSimulador = crearBotonMenu("Simulador de Ahorro");
+        JButton btnDashboard = crearBotonMenu("Dashboard", ACCENT_CYAN);
+        JButton btnDispositivos = crearBotonMenu("Añadir Dispositivos", new Color(165, 230, 40));
+        JButton btnReglas = crearBotonMenu("Reglas y Horarios", new Color(74, 82, 138));
+        JButton btnResumen = crearBotonMenu("Resumen Total ($)", new Color(254, 150, 180)); 
 
-        // Navegación fluida entre pantallas
         btnDashboard.addActionListener(e -> cardLayout.show(panelContenedor, "VISTA_DASHBOARD"));
         btnDispositivos.addActionListener(e -> cardLayout.show(panelContenedor, "VISTA_DISPOSITIVOS"));
-        btnReglas.addActionListener(e -> cardLayout.show(panelContenedor, "VISTA_REGLAS"));
-        btnSimulador.addActionListener(e -> cardLayout.show(panelContenedor, "VISTA_SIMULADOR"));
+        
+        btnResumen.addActionListener(e -> {
+            construirTarjetasResumen();
+            cardLayout.show(panelContenedor, "VISTA_RESUMEN");
+        });
 
         panelMenu.add(btnDashboard);
         panelMenu.add(btnDispositivos);
         panelMenu.add(btnReglas);
-        panelMenu.add(btnSimulador);
+        panelMenu.add(btnResumen);
 
-        getContentPane().add(panelMenu, BorderLayout.WEST);
+        JButton btnSalir = crearBotonMenu("Salir del Sistema", ACCENT_RED);
+        btnSalir.addActionListener(e -> confirmarSalida());
+        panelMenu.add(btnSalir);
+
+        add(panelMenu, BorderLayout.WEST);
     }
 
     private void construirVistas() {
         JPanel vistaDashboard = crearPanelDashboard();
-        JPanel vistaDispositivos = crearPanelDispositivos(); // Vinculamos la nueva pantalla de control
-        JPanel vistaReglas = crearPanelPlaceholder("Sección Reglas y Horarios - Próximamente");
-        JPanel vistaSimulador = crearPanelPlaceholder("Sección Simulador de Ahorro - Próximamente");
+        JPanel vistaDispositivos = crearPanelDispositivos();
+        JPanel vistaResumen = crearPanelResumenGlobal();
+        JPanel vistaReglas = crearPanelPlaceholder("Reglas y Horarios - Próximamente");
 
         panelContenedor.add(vistaDashboard, "VISTA_DASHBOARD");
         panelContenedor.add(vistaDispositivos, "VISTA_DISPOSITIVOS");
+        panelContenedor.add(vistaResumen, "VISTA_RESUMEN");
         panelContenedor.add(vistaReglas, "VISTA_REGLAS");
-        panelContenedor.add(vistaSimulador, "VISTA_SIMULADOR");
 
         cardLayout.show(panelContenedor, "VISTA_DASHBOARD");
-        getContentPane().add(panelContenedor, BorderLayout.CENTER);
+        add(panelContenedor, BorderLayout.CENTER);
     }
 
-    /**
-     * 1. PANTALLA DASHBOARD: Exclusiva para monitorear el consumo actual
-     */
     private JPanel crearPanelDashboard() {
-        JPanel panelDashboard = new JPanel();
-        panelDashboard.setBackground(COLOR_FONDO);
-        panelDashboard.setLayout(new BorderLayout(20, 20));
-        panelDashboard.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
+        JPanel panelDash = new JPanel(new BorderLayout(20, 20));
+        panelDash.setBackground(BG_COLOR);
+        panelDash.setBorder(new EmptyBorder(25, 25, 25, 25));
 
-        // Cabecera limpia sin controles de agregar
-        JLabel lblBienvenida = new JLabel("Dashboard: Resumen de Consumo Actual");
-        lblBienvenida.setFont(new Font("Tahoma", Font.BOLD, 26));
-        lblBienvenida.setForeground(COLOR_TEXTO_OSCURO);
-        panelDashboard.add(lblBienvenida, BorderLayout.NORTH);
+        JLabel lblDashboard = new JLabel("Dashboard: Control de Aparatos (" + usuarioActivo.getUsername() + ")");
+        lblDashboard.setForeground(TEXT_COLOR);
+        lblDashboard.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        panelDash.add(lblDashboard, BorderLayout.NORTH);
 
-        // Rejilla de tarjetas (vinculada al JScrollPane)
-        JScrollPane scrollTarjetas = new JScrollPane(panelTarjetas);
-        scrollTarjetas.setBorder(null);
-        scrollTarjetas.setBackground(COLOR_FONDO);
-        scrollTarjetas.getViewport().setBackground(COLOR_FONDO);
-        panelDashboard.add(scrollTarjetas, BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(panelDashboardTarjetas);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.setBackground(BG_COLOR);
+        scrollPane.getViewport().setBackground(BG_COLOR);
+        panelDash.add(scrollPane, BorderLayout.CENTER);
 
-        // Botón de acción global en la base
-        JButton btnApagarTodo = new JButton("Apagar Todos los Dispositivos (Modo Ahorro Crítico)");
-        btnApagarTodo.setBackground(COLOR_ALERTA);
-        btnApagarTodo.setForeground(COLOR_TEXTO_BLANCO);
-        btnApagarTodo.setFont(new Font("Arial", Font.BOLD, 18));
-        btnApagarTodo.setFocusPainted(false);
-        btnApagarTodo.setPreferredSize(new Dimension(0, 50));
-        
-        btnApagarTodo.addActionListener(e -> {
-            JOptionPane.showMessageDialog(null, 
-                "Regla de seguridad activada: Todos los dispositivos activos han sido apagados temporalmente.", 
-                "Modo Ahorro Activado", 
-                JOptionPane.INFORMATION_MESSAGE);
-        });
+        JPanel panelInferior = new JPanel(new GridLayout(1, 2, 20, 0));
+        panelInferior.setBackground(BG_COLOR);
 
-        panelDashboard.add(btnApagarTodo, BorderLayout.SOUTH);
+        JButton btnEncenderTodos = new JButton("Encender Todos los Dispositivos");
+        estilizarBotonGlobal(btnEncenderTodos, ACCENT_GREEN);
+        btnEncenderTodos.addActionListener(e -> accionarTodos(true));
 
-        return panelDashboard;
+        JButton btnApagarTodos = new JButton("Apagar Todos (Modo Ahorro Crítico)");
+        estilizarBotonGlobal(btnApagarTodos, ACCENT_RED);
+        btnApagarTodos.addActionListener(e -> accionarTodos(false));
+
+        panelInferior.add(btnEncenderTodos);
+        panelInferior.add(btnApagarTodos);
+        panelDash.add(panelInferior, BorderLayout.SOUTH);
+
+        return panelDash;
     }
 
-    /**
-     * 2. PANTALLA DISPOSITIVOS: Donde aparece la sección para seleccionar e integrar elementos
-     */
     private JPanel crearPanelDispositivos() {
-        JPanel panelDispositivos = new JPanel();
-        panelDispositivos.setBackground(COLOR_FONDO);
-        panelDispositivos.setLayout(new BorderLayout(20, 20));
-        panelDispositivos.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
+        JPanel panelDisp = new JPanel(new BorderLayout(20, 20));
+        panelDisp.setBackground(BG_COLOR);
+        panelDisp.setBorder(new EmptyBorder(25, 25, 25, 25));
 
-        // Cabecera de la sección de administración
         JLabel lblTitulo = new JLabel("Administración y Registro de Dispositivos");
-        lblTitulo.setFont(new Font("Tahoma", Font.BOLD, 26));
-        lblTitulo.setForeground(COLOR_TEXTO_OSCURO);
-        panelDispositivos.add(lblTitulo, BorderLayout.NORTH);
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        lblTitulo.setForeground(TEXT_COLOR);
+        panelDisp.add(lblTitulo, BorderLayout.NORTH);
 
-        // Panel central: Contenedor estético para la barra de selección
         JPanel panelCentro = new JPanel(new GridBagLayout());
-        panelCentro.setBackground(COLOR_FONDO);
+        panelCentro.setBackground(BG_COLOR);
 
-        // Subpanel contenedor estilizado como una tarjeta de configuración
         JPanel panelControlAgregar = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
-        panelControlAgregar.setBackground(Color.WHITE);
+        panelControlAgregar.setBackground(PANEL_COLOR);
         panelControlAgregar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1, true),
+                BorderFactory.createLineBorder(new Color(165, 230, 40), 2, true),
                 BorderFactory.createEmptyBorder(20, 30, 20, 30)
         ));
 
         JLabel lblSeleccionar = new JLabel("Seleccione el dispositivo a vincular:");
-        lblSeleccionar.setFont(new Font("Tahoma", Font.BOLD, 14));
-        lblSeleccionar.setForeground(COLOR_TEXTO_OSCURO);
+        lblSeleccionar.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblSeleccionar.setForeground(TEXT_COLOR);
         
         String[] opcionesDispositivos = {
-            "1. Bombillo", 
-            "2. Televisor", 
-            "3. Nevera", 
-            "4. Calefacción", 
-            "5. Dispositivo 24/7"
+            "1. Bombillo LED", "2. Televisor Smart", "3. Nevera Inverter", "4. Calefactor", 
+            "5. Consola de Videojuegos", "6. Microondas", "7. Lavadora", "8. Aire Acondicionado", 
+            "9. Secador de Cabello", "10. Ventilador", "11. Licuadora", "12. Cargador de Celular", 
+            "13. Computador Portátil", "14. Ducha Eléctrica", "15. Air Fryer"
         };
         JComboBox<String> comboDispositivos = new JComboBox<>(opcionesDispositivos);
-        comboDispositivos.setFont(new Font("Tahoma", Font.PLAIN, 14));
-        comboDispositivos.setPreferredSize(new Dimension(180, 30));
-        comboDispositivos.setBackground(Color.WHITE);
+        comboDispositivos.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        comboDispositivos.setBackground(new Color(40, 40, 40));
+        comboDispositivos.setForeground(TEXT_COLOR);
 
         JButton btnAgregar = new JButton("Vincular al Sistema");
-        btnAgregar.setBackground(COLOR_AHORRO);
-        btnAgregar.setForeground(COLOR_TEXTO_BLANCO);
-        btnAgregar.setFont(new Font("Tahoma", Font.BOLD, 14));
+        btnAgregar.setBackground(BG_COLOR);
+        btnAgregar.setForeground(new Color(165, 230, 40));
+        btnAgregar.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnAgregar.setBorder(BorderFactory.createLineBorder(new Color(165, 230, 40), 2));
         btnAgregar.setFocusPainted(false);
-        btnAgregar.setPreferredSize(new Dimension(180, 30));
 
         panelControlAgregar.add(lblSeleccionar);
         panelControlAgregar.add(comboDispositivos);
         panelControlAgregar.add(btnAgregar);
         
         panelCentro.add(panelControlAgregar);
-        panelDispositivos.add(panelCentro, BorderLayout.CENTER);
+        panelDisp.add(panelCentro, BorderLayout.CENTER);
 
-        // --- LÓGICA DE AGREGACIÓN DESDE ESTA PANTALLA ---
-        btnAgregar.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String seleccion = (String) comboDispositivos.getSelectedItem();
-                String nombreDispositivo = seleccion.substring(3); // Quita el índice numérico
-                String consumoText = "";
-                Color colorBorde = COLOR_MENU;
+        btnAgregar.addActionListener(e -> {
+            String seleccion = (String) comboDispositivos.getSelectedItem();
+            String nombreDispositivo = seleccion.split("\\.\\s+")[1]; 
+            int wattsReales = 0;
+            Color colorBorde = ACCENT_CYAN;
 
-                switch (seleccion) {
-                    case "1. Bombillo":
-                        consumoText = "Consumo: 0.05 kWh";
-                        colorBorde = COLOR_AHORRO;
-                        break;
-                    case "2. Televisor":
-                        consumoText = "Consumo: 0.25 kWh";
-                        colorBorde = COLOR_MENU;
-                        break;
-                    case "3. Nevera":
-                        consumoText = "Consumo: 1.20 kWh";
-                        colorBorde = COLOR_ALERTA;
-                        break;
-                    case "4. Calefacción":
-                        consumoText = "Consumo: 2.00 kWh";
-                        colorBorde = COLOR_ALERTA;
-                        break;
-                    case "5. Dispositivo 24/7":
-                        consumoText = "Consumo: 0.40 kWh";
-                        colorBorde = new Color(142, 68, 173); // Morado para fijos
-                        break;
-                }
-
-                // Generar tarjeta física e inyectarla al panel global del Dashboard
-                JPanel nuevaTarjeta = crearTarjetaDispositivo(nombreDispositivo, consumoText, colorBorde, true);
-                panelTarjetas.add(nuevaTarjeta);
-                
-                panelTarjetas.revalidate();
-                panelTarjetas.repaint();
-
-                // Mensaje de éxito al usuario
-                JOptionPane.showMessageDialog(panelDispositivos, 
-                        nombreDispositivo + " agregado con éxito al sistema.", 
-                        "Dispositivo Vinculado", JOptionPane.INFORMATION_MESSAGE);
-
-                // Enfoque inteligente: Llevar al usuario directamente al Dashboard para ver su nueva tarjeta
-                cardLayout.show(panelContenedor, "VISTA_DASHBOARD");
+            switch (seleccion) {
+                case "1. Bombillo LED": wattsReales = 15; colorBorde = ACCENT_GREEN; break;
+                case "2. Televisor Smart": wattsReales = 120; colorBorde = ACCENT_CYAN; break;
+                case "3. Nevera Inverter": wattsReales = 250; colorBorde = new Color(212, 175, 55); break;
+                case "4. Calefactor": wattsReales = 1500; colorBorde = ACCENT_RED; break;
+                case "5. Consola de Videojuegos": wattsReales = 200; colorBorde = new Color(180, 120, 220); break;
+                case "6. Microondas": wattsReales = 1200; colorBorde = Color.ORANGE; break;
+                case "7. Lavadora": wattsReales = 500; colorBorde = new Color(30, 144, 255); break;
+                case "8. Aire Acondicionado": wattsReales = 1800; colorBorde = ACCENT_CYAN; break;
+                case "9. Secador de Cabello": wattsReales = 1600; colorBorde = Color.PINK; break;
+                case "10. Ventilador": wattsReales = 70; colorBorde = ACCENT_GREEN; break;
+                case "11. Licuadora": wattsReales = 400; colorBorde = Color.YELLOW; break;
+                case "12. Cargador de Celular": wattsReales = 20; colorBorde = Color.LIGHT_GRAY; break;
+                case "13. Computador Portátil": wattsReales = 90; colorBorde = new Color(0, 255, 200); break;
+                case "14. Ducha Eléctrica": wattsReales = 4500; colorBorde = ACCENT_RED; break; 
+                case "15. Air Fryer": wattsReales = 1500; colorBorde = Color.MAGENTA; break;
             }
+
+            String dataCompacta = nombreDispositivo + "#" + wattsReales + "#" + colorBorde.getRGB();
+            usuarioActivo.getMisDispositivos().add(dataCompacta);
+            gestor.guardarDatos(); 
+
+            PanelDispositivo nuevoPanel = new PanelDispositivo(nombreDispositivo, wattsReales, colorBorde, dataCompacta);
+            listaPanelesDispositivos.add(nuevoPanel);
+            panelDashboardTarjetas.add(nuevoPanel);
+            
+            panelDashboardTarjetas.revalidate();
+            panelDashboardTarjetas.repaint();
+
+            JOptionPane.showMessageDialog(panelDisp, nombreDispositivo + " vinculado con éxito.");
+            cardLayout.show(panelContenedor, "VISTA_DASHBOARD");
         });
 
-        return panelDispositivos;
+        return panelDisp;
     }
 
-    private JPanel crearTarjetaDispositivo(String nombre, String estado, Color colorBorde, boolean encendido) {
-        JPanel tarjeta = new JPanel();
-        tarjeta.setLayout(new BoxLayout(tarjeta, BoxLayout.Y_AXIS));
-        tarjeta.setBackground(Color.WHITE);
-        tarjeta.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(colorBorde, 3, true),
-                BorderFactory.createEmptyBorder(15, 15, 15, 15)
-        ));
+    private JPanel crearPanelResumenGlobal() {
+        JPanel panelResumen = new JPanel(new BorderLayout(20, 20));
+        panelResumen.setBackground(BG_COLOR);
+        panelResumen.setBorder(new EmptyBorder(25, 25, 25, 25));
 
-        // Botón superior derecho "X" para desvincular el dispositivo
-        JPanel panelCierre = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        panelCierre.setBackground(Color.WHITE);
-        JButton btnEliminar = new JButton("X");
-        btnEliminar.setFont(new Font("Arial", Font.BOLD, 11));
-        btnEliminar.setForeground(Color.LIGHT_GRAY);
-        btnEliminar.setBorderPainted(false);
-        btnEliminar.setContentAreaFilled(false);
-        btnEliminar.setFocusPainted(false);
-        panelCierre.add(btnEliminar);
-        tarjeta.add(panelCierre);
+        JLabel lblTitulo = new JLabel("Resumen Total de Gastos Estimados (Mensual)");
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        lblTitulo.setForeground(TEXT_COLOR);
+        panelResumen.add(lblTitulo, BorderLayout.NORTH);
 
-        JLabel lblNombre = new JLabel(nombre);
-        lblNombre.setFont(new Font("Tahoma", Font.BOLD, 18));
-        lblNombre.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JScrollPane scrollPane = new JScrollPane(panelResumenTarjetas);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.setBackground(BG_COLOR);
+        scrollPane.getViewport().setBackground(BG_COLOR);
+        panelResumen.add(scrollPane, BorderLayout.CENTER);
 
-        JLabel lblEstado = new JLabel(estado);
-        lblEstado.setFont(new Font("Arial", Font.PLAIN, 14));
-        lblEstado.setAlignmentX(Component.CENTER_ALIGNMENT);
-        lblEstado.setForeground(Color.GRAY);
+        return panelResumen;
+    }
 
-        JButton btnAccion = new JButton(encendido ? "Encendido" : "Apagado");
-        btnAccion.setBackground(encendido ? COLOR_AHORRO : COLOR_ALERTA);
-        btnAccion.setForeground(COLOR_TEXTO_BLANCO);
-        btnAccion.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnAccion.setFocusPainted(false);
+    private void construirTarjetasResumen() {
+        panelResumenTarjetas.removeAll();
+        double totalKwhMes = 0;
+        double totalPlataMes = 0;
 
-        btnAccion.addActionListener(e -> {
-            if (btnAccion.getText().equals("Encendido")) {
-                btnAccion.setText("Apagado");
-                btnAccion.setBackground(COLOR_ALERTA);
+        for (PanelDispositivo disp : listaPanelesDispositivos) {
+            double kwhDisp = (disp.getWatts() * 8 * 30) / 1000.0;
+            double costoDisp = kwhDisp * TARIFA_KWH;
+
+            totalKwhMes += kwhDisp;
+            totalPlataMes += costoDisp;
+
+            JPanel tarjetica = new JPanel(new GridLayout(4, 1));
+            tarjetica.setPreferredSize(new Dimension(220, 180));
+            tarjetica.setBackground(PANEL_COLOR);
+            tarjetica.setBorder(BorderFactory.createLineBorder(disp.getColorBorde(), 2));
+
+            JLabel lNombre = new JLabel(disp.getNombre(), SwingConstants.CENTER);
+            lNombre.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            lNombre.setForeground(TEXT_COLOR);
+
+            JLabel lWatts = new JLabel("Potencia: " + disp.getWatts() + "W", SwingConstants.CENTER);
+            lWatts.setForeground(Color.LIGHT_GRAY);
+
+            JLabel lKwh = new JLabel(String.format("KWh Mes: %.2f", kwhDisp), SwingConstants.CENTER);
+            lKwh.setForeground(ACCENT_CYAN);
+
+            JLabel lCosto = new JLabel(String.format("$ %,.0f COP", costoDisp), SwingConstants.CENTER);
+            lCosto.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            lCosto.setForeground(ACCENT_GREEN);
+
+            tarjetica.add(lNombre);
+            tarjetica.add(lWatts);
+            tarjetica.add(lKwh);
+            tarjetica.add(lCosto);
+
+            panelResumenTarjetas.add(tarjetica);
+        }
+
+        JPanel tarjetaSuma = new JPanel(new GridLayout(4, 1));
+        tarjetaSuma.setPreferredSize(new Dimension(350, 200));
+        tarjetaSuma.setBackground(new Color(40, 20, 20)); 
+        tarjetaSuma.setBorder(BorderFactory.createLineBorder(ACCENT_RED, 4));
+
+        JLabel tTitulo = new JLabel("TOTAL ESTIMADO DEL MES", SwingConstants.CENTER);
+        tTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        tTitulo.setForeground(Color.YELLOW);
+
+        JLabel tAviso = new JLabel("(Basado en 8h/día a $850/kWh)", SwingConstants.CENTER);
+        tAviso.setForeground(Color.LIGHT_GRAY);
+
+        JLabel tKwh = new JLabel(String.format("Total Consumo: %.2f kWh", totalKwhMes), SwingConstants.CENTER);
+        tKwh.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        tKwh.setForeground(TEXT_COLOR);
+
+        JLabel tCosto = new JLabel(String.format("FACTURA: $ %,.0f COP", totalPlataMes), SwingConstants.CENTER);
+        tCosto.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        tCosto.setForeground(ACCENT_GREEN);
+
+        tarjetaSuma.add(tTitulo);
+        tarjetaSuma.add(tAviso);
+        tarjetaSuma.add(tKwh);
+        tarjetaSuma.add(tCosto);
+
+        panelResumenTarjetas.add(tarjetaSuma);
+
+        panelResumenTarjetas.revalidate();
+        panelResumenTarjetas.repaint();
+    }
+
+    private void cargarDispositivosGuardados() {
+        if (usuarioActivo.getMisDispositivos() != null) {
+            for (String d : usuarioActivo.getMisDispositivos()) {
+                try {
+                    String[] partes = d.split("#");
+                    String nombre = partes[0];
+                    int watts = Integer.parseInt(partes[1]);
+                    Color color = new Color(Integer.parseInt(partes[2]));
+                    
+                    PanelDispositivo panel = new PanelDispositivo(nombre, watts, color, d);
+                    listaPanelesDispositivos.add(panel);
+                    panelDashboardTarjetas.add(panel);
+                } catch (Exception ex) {}
+            }
+            panelDashboardTarjetas.revalidate();
+            panelDashboardTarjetas.repaint();
+        }
+    }
+
+    private void accionarTodos(boolean encender) {
+        for (PanelDispositivo panel : listaPanelesDispositivos) {
+            if (!panel.isBloqueado()) {
+                panel.setEstado(encender);
+            }
+        }
+    }
+
+    private void confirmarSalida() {
+        UIManager.put("OptionPane.background", BG_COLOR);
+        UIManager.put("Panel.background", BG_COLOR);
+        UIManager.put("OptionPane.messageForeground", TEXT_COLOR);
+        
+        int opcion = JOptionPane.showConfirmDialog(this,
+                "¿Estás seguro de que quieres cerrar el sistema, mi pez?",
+                "Confirmar Salida",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if (opcion == JOptionPane.YES_OPTION) System.exit(0);
+    }
+
+    private JButton crearBotonMenu(String texto, Color borderColor) {
+        JButton btn = new JButton(texto);
+        btn.setBackground(BG_COLOR);
+        btn.setForeground(TEXT_COLOR);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createLineBorder(borderColor, 2));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
+    private void GridBagConstraints() {}
+
+    private void estilizarBotonGlobal(JButton btn, Color color) {
+        btn.setBackground(BG_COLOR);
+        btn.setForeground(color);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createLineBorder(color, 2));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setPreferredSize(new Dimension(0, 50));
+    }
+
+    private JPanel crearPanelPlaceholder(String msj) {
+        JPanel p = new JPanel(new GridBagLayout());
+        p.setBackground(BG_COLOR);
+        JLabel l = new JLabel(msj);
+        l.setForeground(TEXT_COLOR);
+        l.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        p.add(l);
+        return p;
+    }
+
+    private void aplicarEscaladoFuentes(Component comp, float scale) {
+        if (comp.getFont() != null) {
+            Float baseSize = (Float) ((JComponent) comp).getClientProperty("baseFontSize");
+            if (baseSize == null) {
+                baseSize = (float) comp.getFont().getSize();
+                ((JComponent) comp).putClientProperty("baseFontSize", baseSize);
+            }
+            float newSize = Math.max(10f, baseSize * scale);
+            comp.setFont(comp.getFont().deriveFont(newSize));
+        }
+        if (comp instanceof Container) {
+            for (Component child : ((Container) comp).getComponents()) {
+                aplicarEscaladoFuentes(child, scale);
+            }
+        }
+    }
+
+    // ================= TARJETA DE DISPOSITIVO INTERNA =================
+    class PanelDispositivo extends JPanel {
+        private boolean encendido = true;
+        private boolean bloqueado = false;
+        private String nombre;
+        private int watts; 
+        private String rawData; 
+        private Color colorBorde;
+        
+        private JLabel lblEstado;
+        private JLabel lblNombre;
+        private JButton btnCandado;
+        private JButton btnEditar;
+
+        private ImageIcon imgCandadoVerde;
+        private ImageIcon imgCandadoRojo;
+        private ImageIcon imgLapiz;
+
+        public PanelDispositivo(String nombre, int watts, Color colorBorde, String rawData) {
+            this.nombre = nombre;
+            this.watts = watts;
+            this.rawData = rawData;
+            this.colorBorde = colorBorde;
+
+            // Nombres fijos y limpios vinculados directamente a la raíz de tu proyecto
+            imgCandadoVerde = redimensionarIcono("candado_verde.png", 24, 24);
+            imgCandadoRojo = redimensionarIcono("candado_rojo.png", 24, 24);
+            imgLapiz = redimensionarIcono("lapiz_editar.png", 20, 20);
+
+            setLayout(new BorderLayout());
+            setPreferredSize(new Dimension(280, 400));
+            setBackground(PANEL_COLOR);
+            setBorder(BorderFactory.createLineBorder(colorBorde, 2));
+
+            JPanel panelTop = new JPanel(new BorderLayout());
+            panelTop.setBackground(PANEL_COLOR);
+            panelTop.setBorder(new EmptyBorder(5, 5, 5, 5));
+
+            JPanel pnlIzq = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            pnlIzq.setBackground(PANEL_COLOR);
+
+            // Botón Candado
+            btnCandado = new JButton();
+            btnCandado.setBackground(PANEL_COLOR);
+            btnCandado.setBorder(null);
+            btnCandado.setFocusPainted(false);
+            btnCandado.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            if (imgCandadoVerde != null) {
+                btnCandado.setIcon(imgCandadoVerde);
             } else {
-                btnAccion.setText("Encendido");
-                btnAccion.setBackground(COLOR_AHORRO);
+                // Respaldo de texto seguro si el IDE no renderiza el icono
+                btnCandado.setText("[ABRIR]");
+                btnCandado.setFont(new Font("Segoe UI", Font.BOLD, 11));
+                btnCandado.setForeground(ACCENT_GREEN);
             }
-        });
+            btnCandado.addActionListener(e -> toggleBloqueo());
 
-        // Eliminar tarjeta físicamente de la interfaz del Dashboard
-        btnEliminar.addActionListener(e -> {
-            panelTarjetas.remove(tarjeta);
-            panelTarjetas.revalidate();
-            panelTarjetas.repaint();
-        });
+            // Botón Editar Nombre
+            btnEditar = new JButton(); 
+            btnEditar.setBackground(PANEL_COLOR);
+            btnEditar.setBorder(null);
+            btnEditar.setFocusPainted(false);
+            btnEditar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            if (imgLapiz != null) {
+                btnEditar.setIcon(imgLapiz);
+            } else {
+                // Respaldo de texto seguro para el lápiz
+                btnEditar.setText("[EDIT]");
+                btnEditar.setFont(new Font("Segoe UI", Font.BOLD, 11));
+                btnEditar.setForeground(ACCENT_CYAN);
+            }
+            btnEditar.addActionListener(e -> editarNombre());
 
-        tarjeta.add(Box.createVerticalGlue());
-        tarjeta.add(lblNombre);
-        tarjeta.add(Box.createRigidArea(new Dimension(0, 10)));
-        tarjeta.add(lblEstado);
-        tarjeta.add(Box.createRigidArea(new Dimension(0, 15)));
-        tarjeta.add(btnAccion);
-        tarjeta.add(Box.createVerticalGlue());
+            pnlIzq.add(btnCandado);
+            pnlIzq.add(btnEditar);
 
-        return tarjeta;
-    }
+            JButton btnCerrar = new JButton("X");
+            btnCerrar.setBackground(PANEL_COLOR);
+            btnCerrar.setForeground(ACCENT_RED);
+            btnCerrar.setBorder(null);
+            btnCerrar.setFocusPainted(false);
+            btnCerrar.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            btnCerrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btnCerrar.addActionListener(e -> eliminarDispositivo());
 
-    private JPanel crearPanelPlaceholder(String mensaje) {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(COLOR_FONDO);
-        JLabel label = new JLabel(mensaje);
-        label.setFont(new Font("Tahoma", Font.BOLD, 18));
-        label.setForeground(COLOR_TEXTO_OSCURO);
-        panel.add(label);
-        return panel;
-    }
+            panelTop.add(pnlIzq, BorderLayout.WEST);
+            panelTop.add(btnCerrar, BorderLayout.EAST);
+            add(panelTop, BorderLayout.NORTH);
 
-    private JButton crearBotonMenu(String texto) {
-        JButton boton = new JButton(texto);
-        boton.setBackground(new Color(154, 205, 50));
-        boton.setForeground(Color.WHITE);
-        boton.setFont(new Font("Tahoma", Font.PLAIN, 16));
-        boton.setFocusPainted(false);
-        boton.setBorder(new LineBorder(Color.LIGHT_GRAY));
-        return boton;
-    }
+            JPanel panelInfo = new JPanel(new GridLayout(4, 1));
+            panelInfo.setBackground(PANEL_COLOR);
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            new ControladorEnergiaGUI().setVisible(true);
-        });
+            lblNombre = new JLabel(nombre, SwingConstants.CENTER);
+            lblNombre.setFont(new Font("Segoe UI", Font.BOLD, 22));
+            lblNombre.setForeground(TEXT_COLOR);
+
+            JLabel lblWatts = new JLabel("Potencia: " + watts + " W", SwingConstants.CENTER);
+            lblWatts.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            lblWatts.setForeground(Color.LIGHT_GRAY);
+
+            lblEstado = new JLabel("ENCENDIDO", SwingConstants.CENTER);
+            lblEstado.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            lblEstado.setForeground(ACCENT_GREEN);
+            lblEstado.setBorder(BorderFactory.createLineBorder(ACCENT_GREEN, 1));
+
+            JButton btnDetalles = new JButton("Ver Detalles de Consumo");
+            btnDetalles.setBackground(BG_COLOR);
+            btnDetalles.setForeground(TEXT_COLOR);
+            btnDetalles.setFocusPainted(false);
+            btnDetalles.addActionListener(e -> mostrarCalculadoraHogar());
+
+            panelInfo.add(lblNombre);
+            panelInfo.add(lblWatts);
+            panelInfo.add(lblEstado);
+            
+            JPanel pnlBtnDetalle = new JPanel(); 
+            pnlBtnDetalle.setBackground(PANEL_COLOR);
+            pnlBtnDetalle.add(btnDetalles);
+            panelInfo.add(pnlBtnDetalle);
+
+            add(panelInfo, BorderLayout.CENTER);
+
+            JButton btnToggle = new JButton("ON / OFF");
+            btnToggle.setBackground(BG_COLOR);
+            btnToggle.setForeground(TEXT_COLOR);
+            btnToggle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            btnToggle.setBorder(BorderFactory.createLineBorder(TEXT_COLOR, 1));
+            btnToggle.setPreferredSize(new Dimension(0, 40));
+            btnToggle.setFocusPainted(false);
+            btnToggle.addActionListener(e -> setEstado(!encendido));
+
+            add(btnToggle, BorderLayout.SOUTH);
+        }
+
+        public String getNombre() { return nombre; }
+        public int getWatts() { return watts; }
+        public Color getColorBorde() { return colorBorde; }
+        public boolean isBloqueado() { return bloqueado; }
+
+        private void toggleBloqueo() {
+            bloqueado = !bloqueado;
+            if (bloqueado) {
+                if (imgCandadoRojo != null) {
+                    btnCandado.setIcon(imgCandadoRojo);
+                    btnCandado.setText("");
+                } else {
+                    btnCandado.setText("[BLOQ]");
+                    btnCandado.setForeground(ACCENT_RED);
+                }
+            } else {
+                if (imgCandadoVerde != null) {
+                    btnCandado.setIcon(imgCandadoVerde);
+                    btnCandado.setText("");
+                } else {
+                    btnCandado.setText("[ABRIR]");
+                    btnCandado.setForeground(ACCENT_GREEN);
+                }
+            }
+        }
+
+        private void editarNombre() {
+            UIManager.put("OptionPane.background", BG_COLOR);
+            UIManager.put("Panel.background", BG_COLOR);
+            UIManager.put("OptionPane.messageForeground", TEXT_COLOR);
+
+            String nuevoNombre = JOptionPane.showInputDialog(this, "Renombrar dispositivo:", nombre);
+            if (nuevoNombre != null && !nuevoNombre.trim().isEmpty()) {
+                String nuevaRawData = nuevoNombre.trim() + "#" + this.watts + "#" + this.colorBorde.getRGB();
+                
+                usuarioActivo.getMisDispositivos().remove(this.rawData);
+                usuarioActivo.getMisDispositivos().add(nuevaRawData);
+                gestor.guardarDatos();
+                
+                this.nombre = nuevoNombre.trim();
+                this.rawData = nuevaRawData;
+                this.lblNombre.setText(this.nombre);
+            }
+        }
+
+        public void setEstado(boolean estado) {
+            this.encendido = estado;
+            lblEstado.setText(encendido ? "ENCENDIDO" : "APAGADO");
+            lblEstado.setForeground(encendido ? ACCENT_GREEN : ACCENT_RED);
+            lblEstado.setBorder(BorderFactory.createLineBorder(encendido ? ACCENT_GREEN : ACCENT_RED, 1));
+        }
+
+        private void eliminarDispositivo() {
+            usuarioActivo.getMisDispositivos().remove(rawData);
+            gestor.guardarDatos();
+            listaPanelesDispositivos.remove(this);
+            panelDashboardTarjetas.remove(this);
+            panelDashboardTarjetas.revalidate();
+            panelDashboardTarjetas.repaint();
+        }
+
+        private void mostrarCalculadoraHogar() {
+            int horasUso = 8, diasUso = 30;
+            try {
+                String h = JOptionPane.showInputDialog(this, "¿Cuántas horas al día se usa?", "8");
+                if (h == null) return;
+                horasUso = Integer.parseInt(h);
+                
+                String d = JOptionPane.showInputDialog(this, "¿Cuántos días al mes?", "30");
+                if (d == null) return;
+                diasUso = Integer.parseInt(d);
+            } catch(Exception ex) { return; }
+
+            double kWhMensual = (this.watts * horasUso * diasUso) / 1000.0;
+            double costoTotal = kWhMensual * TARIFA_KWH;
+
+            String msj = String.format(
+                "<html><body style='width: 250px; color: white;'>" +
+                "<h2>📊 Detalles: %s</h2>" +
+                "<b>Potencia Nominal:</b> %d W<br>" +
+                "<b>Tiempo de uso:</b> %d hrs/día por %d días<br><br>" +
+                "<h3 style='color: #00d4ff;'>Consumo Mensual: %.2f kWh</h3>" +
+                "<h3 style='color: #39ff14;'>Costo Estimado: $ %,.0f COP</h3>" +
+                "</body></html>", 
+                this.nombre, this.watts, horasUso, diasUso, kWhMensual, costoTotal
+            );
+
+            UIManager.put("OptionPane.background", BG_COLOR);
+            UIManager.put("Panel.background", BG_COLOR);
+            JOptionPane.showMessageDialog(this, msj, "Calculadora Hogar", JOptionPane.INFORMATION_MESSAGE);
+        }
+
+        private ImageIcon redimensionarIcono(String ruta, int ancho, int alto) {
+            try {
+                ImageIcon iconoOriginal = new ImageIcon(ruta);
+                if (iconoOriginal.getIconWidth() > 0) { 
+                    Image imgEscalada = iconoOriginal.getImage().getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
+                    return new ImageIcon(imgEscalada);
+                }
+            } catch (Exception e) {
+                System.err.println("No se pudo procesar la imagen: " + ruta);
+            }
+            return null;
+        }
     }
 }

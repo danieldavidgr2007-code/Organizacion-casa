@@ -4,86 +4,66 @@
 // ==============================================================================
 package logica;
 
-import persistencia.GestorArchivos;
-import excepciones.PasswordInvalidaException;
-import excepciones.UsuarioNoEncontradoException;
+import java.io.*;
 import java.util.ArrayList;
 
-public class GestorUsuarios {
-    
+public class GestorUsuarios implements Serializable {
+    private static final long serialVersionUID = 1L;
     private ArrayList<Usuario> listaUsuarios;
+    private static final String ARCHIVO_DATOS = "usuarios_smarthome.dat";
 
     public GestorUsuarios() {
-        // Cargamos los usuarios del archivo
-        this.listaUsuarios = GestorArchivos.cargarUsuarios();
-        
-        // ¡LA SOLUCIÓN! Si el archivo no existe o está vacío, creamos una lista nueva para que no estalle
-        if (this.listaUsuarios == null) {
-            this.listaUsuarios = new ArrayList<>();
-        }
+        this.listaUsuarios = new ArrayList<>();
+        cargarDatos();
     }
 
     public boolean hayUsuariosRegistrados() {
-        return !this.listaUsuarios.isEmpty();
+        return !listaUsuarios.isEmpty();
     }
 
-    // 1. CREATE
-    public void registrarUsuario(Usuario nuevoUsuario) throws PasswordInvalidaException {
-        if (!ValidadorSeguridad.esPasswordSegura(nuevoUsuario.getContrasena())) {
-            throw new PasswordInvalidaException("La contraseña no cumple con los requerimientos de seguridad.");
+    public boolean registrarUsuario(String username, String password) {
+        if (obtenerUsuario(username) != null) {
+            return false; // Ya existe ese nombre de usuario
         }
-        listaUsuarios.add(nuevoUsuario);
-        GestorArchivos.guardarUsuarios(listaUsuarios);
-        System.out.println("[CONSOLE LOG] Usuario registrado -> " + nuevoUsuario.getNombreUsuario());
+        listaUsuarios.add(new Usuario(username, password));
+        guardarDatos();
+        return true;
     }
 
-    // 2. READ / LOGIN
-    public Usuario buscarYAutenticar(String nombre, String passwordStr) throws UsuarioNoEncontradoException {
-        for (Usuario u : listaUsuarios) {
-            if (u.getNombreUsuario().equalsIgnoreCase(nombre)) {
-                if (u.verificarCredenciales(passwordStr)) {
-                    return u;
-                } else {
-                    return null; // Contraseña incorrecta
-                }
-            }
-        }
-        throw new UsuarioNoEncontradoException("El usuario no existe.");
+    public boolean autenticar(String username, String password) {
+        Usuario u = obtenerUsuario(username);
+        return u != null && u.getPassword().equals(password);
     }
 
-    // Método para buscar un usuario por nombre (Para recuperación)
-    public Usuario buscarUsuario(String nombre) throws UsuarioNoEncontradoException {
+    public Usuario obtenerUsuario(String username) {
         for (Usuario u : listaUsuarios) {
-            if (u.getNombreUsuario().equalsIgnoreCase(nombre)) {
+            if (u.getUsername().equalsIgnoreCase(username)) {
                 return u;
             }
         }
-        throw new UsuarioNoEncontradoException("Usuario no encontrado.");
+        return null;
     }
 
-    // Recuperación de cuenta validando preguntas
-    public Usuario validarPreguntasSeguridad(String nombre, String r1, String r2, String r3) throws UsuarioNoEncontradoException {
-        for (Usuario u : listaUsuarios) {
-            if (u.getNombreUsuario().equalsIgnoreCase(nombre)) {
-                boolean check1 = ValidadorSeguridad.limpiar(r1).equals(ValidadorSeguridad.limpiar(u.getRespSeguridad1()));
-                boolean check2 = ValidadorSeguridad.limpiar(r2).equals(ValidadorSeguridad.limpiar(u.getRespSeguridad2()));
-                
-                if(check1 && check2) {
-                    return u;
-                } else {
-                    return null;
-                }
+    public void guardarDatos() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO_DATOS))) {
+            oos.writeObject(listaUsuarios);
+            System.out.println("[DATA LOG] Datos guardados con éxito.");
+        } catch (IOException e) {
+            System.out.println("[ERROR] No se pudo guardar la data: " + e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void cargarDatos() {
+        File file = new File(ARCHIVO_DATOS);
+        if (file.exists()) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+                this.listaUsuarios = (ArrayList<Usuario>) ois.readObject();
+                System.out.println("[DATA LOG] Datos cargados correctamente. Usuarios: " + listaUsuarios.size());
+            } catch (Exception e) {
+                System.out.println("[ERROR] Error al cargar la data, iniciando vacío.");
+                this.listaUsuarios = new ArrayList<>();
             }
         }
-        throw new UsuarioNoEncontradoException("Usuario no encontrado.");
-    }
-
-    // 3. UPDATE
-    public void actualizarPassword(Usuario u, String nuevaPass) throws PasswordInvalidaException {
-        if (!ValidadorSeguridad.esPasswordSegura(nuevaPass)) {
-            throw new PasswordInvalidaException("Nueva contraseña no segura.");
-        }
-        u.setContrasena(nuevaPass);
-        GestorArchivos.guardarUsuarios(listaUsuarios);
     }
 }
